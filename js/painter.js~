@@ -1,0 +1,623 @@
+var mx = 0;
+var my = 0;
+var mousexy = "0,0";
+
+var resolution = 24;
+
+var stream = true;
+
+var canvasOffset = 10;
+
+var selectedX = canvasOffset;
+var selectedY = canvasOffset;
+
+var imageRefA = "transparent url(../images/tile"
+var imageRefB = ".bmp) repeat scroll 0% 0%";
+var paletteX = 7;
+var paletteY = 8;
+
+var mapX = 32;
+var mapY = 32;
+
+var chunkX = 16;
+var chunkY = 16;
+
+
+//  To Do: make these events work properly in IE
+
+if (window.attachEvent) {
+    document.attachEvent("onmousemove", MouseMv);
+}
+else {
+    document.addEventListener("mousemove", MouseMv, false);
+}
+
+// Begin helper functions
+
+function MouseMv(e) {
+    if (!e) e = window.event;
+
+    if (typeof e.pageY == "number") {
+        mx = e.pageX;
+        my = e.pageY;
+    }
+    else {
+        mX = e.clientX;
+        my = e.clientY;
+    }
+
+
+    mousexy = mx + "," + my;
+
+}
+
+function checkBounds() {
+
+    if (mx < ((mapX * resolution) + canvasOffset) && mx >= canvasOffset && my < ((mapY * resolution) + canvasOffset) && my >= canvasOffset) {
+
+        return true;
+
+    }
+
+    return false
+
+}
+
+
+function checkBoundsAtPoint(x, y) {
+
+    if (x < ((mapX * resolution)) && x >= 0 && y < ((mapY * resolution)) && y >= 0) {
+
+        return true;
+
+    }
+
+    return false
+
+}
+
+function checkCanvasDrag() {
+
+    if (mousepressed && checkBounds()) {
+
+        unsetSelected();
+
+        selectedX = ((parseInt(mx) - ((parseInt(mx) - canvasOffset) % resolution)));
+        selectedY = ((parseInt(my) - ((parseInt(my) - canvasOffset) % resolution)));
+
+        setPixel((parseInt(mx) - ((parseInt(mx) - canvasOffset) % resolution)) + "," + (parseInt(my) - ((parseInt(my) - canvasOffset) % resolution)), imageRefA + currentColor + imageRefB);
+
+        setSelected();
+    }
+
+}
+
+function checkCanvasClick() {
+
+    if (checkBounds()) {
+
+        unsetSelected();
+
+        selectedX = ((parseInt(mx) - ((parseInt(mx) - canvasOffset) % resolution)));
+        selectedY = ((parseInt(my) - ((parseInt(my) - canvasOffset) % resolution)));
+
+        setPixel((parseInt(mx) - ((parseInt(mx) - canvasOffset) % resolution)) + "," + (parseInt(my) - ((parseInt(my) - canvasOffset) % resolution)), imageRefA + currentColor + imageRefB);
+
+        setSelected();
+    }
+
+}
+
+
+var y = 0;
+var tileSize = 1;
+
+var mousepressed = false;
+
+var currentColor = "0";
+
+//creates a div at specified position with image
+
+function drawPixel(x, y, color) {
+
+    var newPixel = document.createElement("div");
+
+    newPixel.className = "pixel";
+    newPixel.id = (x + canvasOffset) + "," + (y + canvasOffset);
+    newPixel.style.background = color;
+    newPixel.style.top = y * tileSize + canvasOffset;
+    newPixel.style.left = x * tileSize + canvasOffset;
+    newPixel.style.zIndex = 1;
+    newPixel.style.width = resolution;
+    newPixel.style.height = resolution;
+
+    document.getElementById("canvas").appendChild(newPixel);
+
+}
+
+function setPixel(pixelID, color) {
+
+    if (document.getElementById(pixelID)) {
+        document.getElementById(pixelID).style.background = color;
+    }
+
+    else {
+
+        alert(pixelID);
+
+    }
+
+}
+
+
+function getPixel(pixelID) {
+
+    if (document.getElementById(pixelID)) {
+        return document.getElementById(pixelID).style.background;
+    }
+
+    else {
+
+        alert(pixelID);
+        return null;
+    }
+
+}
+
+
+// set everything up when page loads
+
+function main() {
+
+    makeGrid();
+    makePalette();
+
+    setTimeout('initialiseSelected()', 100);
+
+    makeTextArea();
+
+}
+
+
+function initialiseSelected() {
+
+
+    if (document.getElementById(selectedX + "," + selectedY)) {
+        document.getElementById(selectedX + "," + selectedY).style.border = "1px solid blue";
+        document.getElementById(selectedX + "," + selectedY).style.zindex = 100;
+        document.getElementById(selectedX + "," + selectedY).style.width = (parseInt(document.getElementById(selectedX + "," + selectedY).style.width.substring(0, document.getElementById(selectedX + "," + selectedY).style.width.length - 2)) - 2) + "px";
+        document.getElementById(selectedX + "," + selectedY).style.height = (parseInt(document.getElementById(selectedX + "," + selectedY).style.height.substring(0, document.getElementById(selectedX + "," + selectedY).style.height.length - 2)) - 2) + "px";
+    }
+
+    else {
+
+        alert(selectedX + "," + selectedY);
+
+    }
+
+}
+
+function makeGrid() {
+
+    var canvas = document.createElement("div");
+    canvas.id = "canvas";
+    canvas.style.top = 0 + "px";
+    canvas.style.left = 0 + "px";
+    canvas.style.position = "absolute";
+
+    document.body.appendChild(canvas);
+    
+    for (y = 0; y < mapY; y += chunkY) {
+
+        for (x = 0; x < mapX; x += chunkX) {
+
+                setTimeout('makeChunk(' + (x * resolution) + ',' + (y * resolution) + ')', (x + y) * 100);
+
+        }
+
+    }
+}
+
+// draw the map in chunks of tiles so user knows something is actually happening
+
+function makeChunk(x1, y1) {
+
+    var defaultImage = imageRefA + "0" + imageRefB;
+
+    for (i = 0; (i < chunkY); i++) {
+
+        for (j = 0; (j < chunkX); j++) {
+
+            if (checkBoundsAtPoint((x1 + (j * resolution)), (y1 + (i * resolution)))) {
+
+                drawPixel((x1 + (j * resolution)), (y1 + (i * resolution)), defaultImage);
+            }
+
+        }
+
+    }
+
+}
+
+
+function setChunk(x1, y1, color) {
+
+
+    for (i = 0; (i < chunkY); i++) {
+
+        for (j = 0; (j < chunkX); j++) {
+
+            if (checkBoundsAtPoint((x1 + (j * resolution)), (y1 + (i * resolution)))) {
+
+                setPixel((x1 + (j * resolution)) + "," + (y1 + (i * resolution)), color);
+            }
+
+        }
+
+    }
+
+
+}
+
+//used for clearing the screen
+
+function setGrid(color) {
+
+    for (k = 0; k < mapY; k += chunkY) {
+
+        for (x = 0; x < mapX; x += chunkX) {
+
+            setTimeout('setChunk(' + (x * resolution + canvasOffset) + ',' + (k * resolution + canvasOffset) + ',' + ("\"" + color + "\"") + ')', (x + k) * 100);
+
+        }
+
+    }
+
+}
+
+
+function makePalette() {
+
+var newPalette;
+
+var pY;
+var pX;
+
+/*
+var r = 1;
+var g = 1;
+var b = 1;
+*/
+
+var clearButton = document.createElement('div');
+clearButton.setAttribute('id', "c");
+clearButton.innerHTML = "Clear Screen"; // I realise innerHTML isn't w3c compliant, intend to fix it at some stage
+clearButton.style.background = imageRefA + "0" + imageRefB;
+clearButton.style.width = "80px";
+clearButton.style.position = "absolute";
+
+clearButton.onclick = function() { setGrid( imageRefA + currentColor + imageRefB); };
+clearButton.style.top = ((mapY*resolution) + (canvasOffset*2) + resolution) + "px";
+clearButton.style.left = canvasOffset + "px";
+clearButton.style.height = "64px";
+document.body.appendChild(clearButton);
+
+for (pY = 0; pY < paletteY; pY++) {
+
+    for (pX = 0; pX < paletteX; pX++) {
+
+        newPalette = document.createElement('div');
+        newPalette.className = "palette";
+        newPalette.setAttribute('id', "p" + (pX + (pY*paletteX)));
+        newPalette.style.top = ((mapY * resolution) + (canvasOffset * 2) + (resolution * pY)) + "px";
+        newPalette.style.left = (((resolution * pX) + canvasOffset) + ((canvasOffset + resolution * 3) + 56 + 64 + canvasOffset*3)) + "px";
+        newPalette.style.width = resolution + "px";
+        newPalette.style.height = resolution + "px";
+        newPalette.style.background = imageRefA + (pX + (pY * paletteX)) + imageRefB;
+        newPalette.onclick = function() { document.getElementById("p" + currentColor).style.border = "1px solid black"; currentColor = getNumericValue(this.style.background); document.getElementById("c").style.background = this.style.background; document.getElementById("p" + currentColor).style.border = "1px solid red"; };
+
+        document.body.appendChild(newPalette);
+
+    }
+
+}
+
+// visually show first palette tile as selected/highlighted.
+document.getElementById("p" + 0).style.border = "1px solid red";
+
+}
+
+//the following functions deal with hightlighting/unhighlighting
+//what tile the user has currently selected
+
+function unsetSelected() {
+
+    var top = document.getElementById(selectedX + "," + selectedY).style.width.substring(0, document.getElementById(selectedX + "," + selectedY).style.width.length - 2);
+    var left = document.getElementById(selectedX + "," + selectedY).style.height.substring(0, document.getElementById(selectedX + "," + selectedY).style.height.length - 2);
+
+    document.getElementById(selectedX + "," + selectedY).style.border = "none";
+    document.getElementById(selectedX + "," + selectedY).style.zindex = "1";
+    document.getElementById(selectedX + "," + selectedY).style.width = (parseInt(top) + 2) + "px";
+    document.getElementById(selectedX + "," + selectedY).style.height = (parseInt(left) + 2) + "px";
+
+}
+
+function setSelected() {
+
+    var top = document.getElementById(selectedX + "," + selectedY).style.width.substring(0, document.getElementById(selectedX + "," + selectedY).style.width.length - 2);
+    var left = document.getElementById(selectedX + "," + selectedY).style.height.substring(0, document.getElementById(selectedX + "," + selectedY).style.height.length - 2);
+
+    document.getElementById(selectedX + "," + selectedY).style.border = "1px solid blue";
+    document.getElementById(selectedX + "," + selectedY).style.zindex = 100;
+    document.getElementById(selectedX + "," + selectedY).style.width = (parseInt(top) - 2) + "px";
+    document.getElementById(selectedX + "," + selectedY).style.height = (parseInt(left) - 2) + "px";
+
+}
+
+
+function keyPress(event) {
+
+    //arrow keys move selected tile
+    if (event.keyCode == 38 && checkBoundsAtPoint(selectedX, selectedY - resolution)) {
+
+        unsetSelected();
+
+        selectedY = selectedY - resolution;
+
+        setSelected();
+
+    }
+
+    else if (event.keyCode == 40 && checkBoundsAtPoint(selectedX, selectedY + resolution)) {
+
+        unsetSelected();
+
+        selectedY = selectedY + resolution;
+
+        setSelected();
+
+    }
+
+    else if (event.keyCode == 37 && checkBoundsAtPoint(selectedX - resolution, selectedY)) {
+
+        unsetSelected();
+
+        selectedX = selectedX - resolution;
+
+        setSelected();
+
+    }
+
+    else if (event.keyCode == 39 && checkBoundsAtPoint(selectedX + resolution, selectedY)) {
+
+        unsetSelected();
+
+        selectedX = selectedX + resolution;
+
+        setSelected();
+
+
+    }
+
+   // space places tiles
+
+    else if (event.keyCode == 32) {
+
+        setPixel(selectedX + "," + selectedY, imageRefA + currentColor + imageRefB);
+
+
+        //stop the scrolling in browser when user hits space
+
+        if (event.cancelBubble) {
+
+            event.cancelBubble = true;
+            event.returnValue = false;
+
+        }
+
+        if (event.stopPropagation) {
+
+            event.stopPropagation();
+            event.preventDefault();
+
+        }
+
+    }
+
+    //enter is a "dropper" tool.
+
+    else if (event.keyCode == 13) {
+
+        document.getElementById("p" + currentColor).style.border = "1px solid black";
+
+        currentColor = getNumericValue(document.getElementById(selectedX + "," + selectedY).style.background);
+        document.getElementById("c").style.background = imageRefA + currentColor + imageRefB;
+
+        document.getElementById("p" + currentColor).style.border = "1px solid red";
+
+    }
+
+    // WASD keys move through tile palette grid
+    else if (event.keyCode == 87) {
+
+    document.getElementById("p" + currentColor).style.border = "1px solid black";
+
+        currentColor = Math.abs((currentColor) - paletteX) % (paletteY*paletteX);
+        document.getElementById("c").style.background = imageRefA + currentColor + imageRefB;
+
+        document.getElementById("p" + currentColor).style.border = "1px solid red";
+
+
+    }
+
+    else if (event.keyCode == 65) {
+
+    document.getElementById("p" + currentColor).style.border = "1px solid black";
+    
+        currentColor = Math.abs((currentColor) - 1) % (paletteY*paletteX);
+        document.getElementById("c").style.background = imageRefA + currentColor + imageRefB;
+
+    document.getElementById("p" + currentColor).style.border = "1px solid red";
+
+        
+    }
+    
+    else if (event.keyCode == 83) {
+
+    document.getElementById("p" + currentColor).style.border = "1px solid black";
+
+        currentColor = ((currentColor) + paletteX) % (paletteY*paletteX);
+        document.getElementById("c").style.background = imageRefA + currentColor + imageRefB;
+
+    document.getElementById("p" + currentColor).style.border = "1px solid red";
+
+    }
+    
+    else if (event.keyCode == 68) {
+
+    document.getElementById("p" + currentColor).style.border = "1px solid black";
+
+        currentColor = ((currentColor) + 1) % (paletteY*paletteX);
+        document.getElementById("c").style.background = imageRefA + currentColor + imageRefB;
+
+    document.getElementById("p" + currentColor).style.border = "1px solid red";
+
+    
+    }
+
+
+}
+
+// reason for this being in a function is that the text area size coresponds to
+// the map size... which may change.
+
+function makeTextArea() {
+
+    var form = document.createElement('form');
+    form.setAttribute('id', 'form1');
+    form.style.position = "absolute";
+    form.style.top = ((mapY * resolution) + (canvasOffset*3) + ((resolution * paletteY))) + "px";
+    form.style.left = canvasOffset + "px";
+
+    var textarea = document.createElement('textarea');
+    textarea.setAttribute('id', "map1");
+    textarea.rows = mapY;
+    textarea.cols = mapX*3 + 1; //take commas, spaces and new lines into account
+    textarea.size = mapX * mapY;
+    textarea.value = "Click save to save your work as text here! Direction keys move around map. WASD change current tile. Space places tiles. Enter acts like a dropper and changes the tile your using to whereever you're currently at. You can use the mouse as well. Tested in Firefox.";
+    form.appendChild(textarea);
+
+    var saveMapButton = document.createElement('button');
+    saveMapButton.innerHTML = "Save"; //need to change this to add text node for w3c compliance.
+    saveMapButton.onclick = saveMap;
+    saveMapButton.style.position = "absolute";
+    saveMapButton.style.top = ((mapY * resolution) + canvasOffset) + "px";
+    saveMapButton.style.left = (canvasOffset) + "px";
+    saveMapButton.style.width = "56px";
+    saveMapButton.style.height = resolution + "px";
+    document.body.appendChild(saveMapButton);
+    
+    var loadMapButton = document.createElement('button');
+    loadMapButton.innerHTML = "Load"; //need to change this to add text node for w3c compliance.
+    loadMapButton.onclick = importMap;
+    loadMapButton.style.position = "absolute";
+    loadMapButton.style.top = ((mapY * resolution) + canvasOffset) + "px";
+    loadMapButton.style.left = (2* canvasOffset + 56) + "px";
+    loadMapButton.style.width = "56px";
+    loadMapButton.style.height = resolution + "px";
+    document.body.appendChild(loadMapButton);
+
+    document.body.appendChild(form);
+
+
+}
+
+//writes current map to the text area.
+function saveMap() {
+
+    var data = "";
+
+    for (y1 = canvasOffset; (y1 < mapY * resolution); y1 += resolution) {
+
+    for (x1 = canvasOffset; (x1 < mapX*resolution); x1+=resolution) {
+
+            data += getNumericValue(getPixel(x1 + "," + y1)) + ", ";
+
+        }
+
+        data += "\n";
+
+    }
+
+    document.getElementById('map1').value = data;
+    
+    //alert(getNumericValue(getPixel("10,10")));
+
+}
+
+function importMap() {
+
+
+    var data = document.getElementById('map1').value;
+	 
+	 // this regex should be more aggressive in its validation,
+	 // like only commas followed by a space and optionally a newline character.
+	 // should also make sure the number of rows and columns match.
+    if( /^(\d|\s|\,)+$/.test(data)==false) {
+    
+    alert("Looks like the data in the textarea isn't valid. Make sure it's a list of numbers.");
+    
+    return -1
+    
+    
+    }
+    
+    else {
+    
+    data = data.replace(/\s/g, "");
+    data = data.replace(/\n/g, "");
+    
+    data = data.split(","); 
+    
+    var tilePos = 0;
+    
+    for (y1 = canvasOffset; (y1 < mapY * resolution); y1 += resolution) {
+   
+   
+        for (x1 = canvasOffset; (x1 < mapX*resolution); x1+=resolution) {
+    
+            
+            setPixel(x1 + "," + y1, imageRefA + data[tilePos] + imageRefB);
+            tilePos++;
+
+        }
+
+    }
+    
+    }//else
+
+}
+
+// helper function to change tilestring to it's numeric value
+function getNumericValue(tile) {
+
+   var numericValue = "";
+   var endpoint =  tile.lastIndexOf(".") -1;
+   
+   for(i = endpoint; i >= 0; i--) {
+
+       if (tile.charAt(i) >= '0' && tile.charAt(i) <= '9' && tile.charAt(i) != '/') {
+           numericValue = tile.charAt(i) + numericValue;
+       }
+
+       else {
+           break;
+       }
+
+   }
+
+ //  alert(numericValue);
+
+   return numericValue;
+
+}
